@@ -1,0 +1,261 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "id": "ea2cec15",
+   "metadata": {
+    "papermill": {
+     "duration": 0.002683,
+     "end_time": "2024-12-27T21:01:54.794026",
+     "exception": false,
+     "start_time": "2024-12-27T21:01:54.791343",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "# Logistic Regression, Inside Out\n",
+    "  \n",
+    "This notebook is meant to provide a clear explaination as to the intuition behind Logistic Regression, where it is used, and how to use it.\n",
+    "This notebook will use the example of classifying student grades using this dataset: https://www.kaggle.com/datasets/rabieelkharoua/students-performance-dataset, Alterations have been made for binary classification.\n",
+    "\n",
+    "### Background Knowledge Assumptions\n",
+    "This notebook assumes you are already familiar with what classification and linear regression are as well as some basic knowledge of statistics and probability.\n",
+    "\n",
+    "### Contents\n",
+    "1. [\"When to Use\"](#chapter1)\n",
+    "2. [\"The Algorithm Broken Down\"](#chapter2)\n",
+    "3. [\"The Algorithm In Use\"](#chapter3)\n",
+    "4. [\"Limiations and Refinements\"](#chapter4)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "078c4456",
+   "metadata": {
+    "papermill": {
+     "duration": 0.001808,
+     "end_time": "2024-12-27T21:01:54.798201",
+     "exception": false,
+     "start_time": "2024-12-27T21:01:54.796393",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "## 1. When to Use <a class = \"anchor\" id = \"chapter1\"></a>\n",
+    "|Advantages | Disadvantages |\n",
+    "| --- | --- |\n",
+    "| Simple to Implement | Might lack performance compared to more complicated Models |\n",
+    "| High Interpretability | Assumes Linearity between Features and Log Odds (logits) |\n",
+    "| Good Baseline for other Models | Assumes Features Independent of Each Other |\n",
+    "| | Assumes Low Multicolinearity Between Features | \n",
+    "\n",
+    "In the simplist case, Logistic Regression takes in various features as inputs and returns the probability of one of two categories given the features. This makes Logistic Regression a simple and intuitive approach to classification tasks.\n",
+    "  \n",
+    "Consider the Example:\n",
+    "Let's say we want to figure out whether a student is likely to pass highschool based on the time they spent studying. Intuitively we would want to find their probability of passing given their time spent studying. Thus, for every observation we are trying to find the following:\n",
+    "$$P(Pass | Studytime)$$\n",
+    "More generally this would be:\n",
+    "$$P(Y | X)$$\n",
+    "Where Y is the class or label for the outcome and X is the observed feature value.\n",
+    "#### MOVE THIS PART LATER\n",
+    "The last example only considers the univariate and binary case (one independent variable and dependent variable that is only yes or no). However, many real world problems require considering multiple variables and many different potential cases for the dependent variable. Once again logistic regression can be used for such a task.\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "13e1d533",
+   "metadata": {
+    "papermill": {
+     "duration": 0.001778,
+     "end_time": "2024-12-27T21:01:54.801926",
+     "exception": false,
+     "start_time": "2024-12-27T21:01:54.800148",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "## 2. The Algorithm Broken Down <a class = \"anchor\" id = \"chapter2\"></a>  \n",
+    "### Predictions\n",
+    "Logistic Regression seeks to answer the question of which possible case is most likely given the provided data. Following our example of students passing highschool based on their study time, a logistic regression model will be answering is it more likely for the student to pass or for the student to fail given their study time. This is done by finding the probability of a given output label (in this case pass or not pass) given by:\n",
+    "$$P(Pass) = \\frac{e^{\\beta_0 + \\beta_1 * Studytime}}{1 + e^{\\beta_0 + \\beta_1 * Studytime}}$$\n",
+    "In a more general form this will be:\n",
+    "$$P(Y) = \\frac{e^{\\beta_0 + \\beta_1 * X}}{1 + e^{\\beta_0 + \\beta_1 * X}}$$\n",
+    "Where Y is a binary variable that is one of 2 classes and X is some independent variable.\n",
+    "\n",
+    "### Optimization\n",
+    "Notice how in calculating the probabilities, the formula $\\beta_0 + \\beta_1 * X$ is used. This is the same formula used in linear regression, however in this case, there is not a linear relationship between the output of the model and the inputs to the model. But for simplicity in the calculation and interpretation of the coefficients in this model, log odds or logits are used given by:\n",
+    "\n",
+    "$$ln(\\frac{P(Y)}{1 - P(Y)} = \\beta_0 + \\beta_1 * X$$\n",
+    "With the same assumptions for X and Y as above.\n",
+    "\n",
+    "Continuing with the example of student performance the log odds will be:\n",
+    "$$ln(\\frac{P(Pass)}{1 - P(Pass)} = \\beta_0 + \\beta_1 * Studytime$$\n",
+    "for the predicted log odds of passing and\n",
+    "$$ln(\\frac{P(Not Pass)}{1 - P(Not Pass)} = \\beta_0 + \\beta_1 * Studytime$$\n",
+    "for the predicted log odds of not passing.\n",
+    "\n",
+    "In Logistic Regression, log odds are use in *optimizing* the model rather than absolute probabilities as it provides a simple relationship between the relationship between the independent variables and the dependent variables. In this case, optimization means finding the values for $\\beta_0$ and $\\beta_1$ that most accurately reflects the nature of the observations. The actual interpretation of the relationship between the log odds and the coefficients can be as follows: a one unit increase in X on average is related to a $\\beta_1$ % increase in the odds of Y when the change is small (ie. ln(5.2) - ln(5) = 0.03922 $\\approx$ (5.2 - 5) / 5). When the change is larger, this interpretation falls apart as the difference in ln values is no longer as close to the actual changes, instead $e^{\\beta_1}$ becomes the actual % change of the odds.\n",
+    "\n",
+    "Building off of the log odds, the method of maximum likelihood is used to estimate the actual coefficients for $\\beta_0$ and $\\beta_1$. Intuitively, the method of maximum likelihoods fits parameters $\\beta_1$ and $\\beta_0$ such that the observed observations are most likely. Essentially in mathematical terms this means that we are maximizing the functions:\n",
+    "$$\\Pi_{i=1}^{n}p(x_i)$$\n",
+    "$$\\Pi_{i=1}^{n}(1 - p(x_i))$$\n",
+    "For labels that are positive (1) and labels that are negative (0) respectively. Combining both into a single function we get:\n",
+    "$$\n",
+    "\\begin{align*}\n",
+    "L(\\beta_0, \\beta_1) &= \\Pi_{i=1}^{n}p(x_i) * \\Pi_{i=1}^{n}(1 - p(x_i)) \\\\\n",
+    "                    &= \\Pi_{i=1}^{n}(p(x_i)^{y_i} * (1 - p(x_i))^{1 - y_i})\n",
+    "\\end{align*}    \n",
+    "$$\n",
+    "Where $n$ is the number of observations in our data, $x_i$ is the feature(s) and $y_i$ is the label of the observation i, $y_i$ is 1 when the label is positive and 0 otherwise. If you want to look more into the math behind maximum likelihood and specifically maximum likelihood for logistic regression, I recommend this post: https://arunaddagatla.medium.com/maximum-likelihood-estimation-in-logistic-regression-f86ff1627b67"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "1d726e90",
+   "metadata": {
+    "papermill": {
+     "duration": 0.001719,
+     "end_time": "2024-12-27T21:01:54.805601",
+     "exception": false,
+     "start_time": "2024-12-27T21:01:54.803882",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "## 3. Implementation <a class = \"anchor\" id = \"chapter3\"></a>  "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 1,
+   "id": "e601b5c0",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-12-27T21:01:54.810835Z",
+     "iopub.status.busy": "2024-12-27T21:01:54.810472Z",
+     "iopub.status.idle": "2024-12-27T21:01:54.815391Z",
+     "shell.execute_reply": "2024-12-27T21:01:54.814508Z"
+    },
+    "papermill": {
+     "duration": 0.009291,
+     "end_time": "2024-12-27T21:01:54.816861",
+     "exception": false,
+     "start_time": "2024-12-27T21:01:54.807570",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "# Coding stuff using sklearn (like 15 minutes max)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "713420cc",
+   "metadata": {
+    "papermill": {
+     "duration": 0.001802,
+     "end_time": "2024-12-27T21:01:54.820711",
+     "exception": false,
+     "start_time": "2024-12-27T21:01:54.818909",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "## 4. Limitations and Refinements <a class = \"anchor\" id = \"chapter4\"></a>  "
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "97a8c9ec",
+   "metadata": {
+    "papermill": {
+     "duration": 0.001758,
+     "end_time": "2024-12-27T21:01:54.824430",
+     "exception": false,
+     "start_time": "2024-12-27T21:01:54.822672",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "## 5. Multivariate Logistic Regression"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "e542d40b",
+   "metadata": {
+    "papermill": {
+     "duration": 0.001767,
+     "end_time": "2024-12-27T21:01:54.828153",
+     "exception": false,
+     "start_time": "2024-12-27T21:01:54.826386",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "## 6. Multi Labels Logistic Regression"
+   ]
+  }
+ ],
+ "metadata": {
+  "kaggle": {
+   "accelerator": "none",
+   "dataSources": [
+    {
+     "datasetId": 5195702,
+     "sourceId": 8677630,
+     "sourceType": "datasetVersion"
+    },
+    {
+     "datasetId": 6380697,
+     "sourceId": 10307667,
+     "sourceType": "datasetVersion"
+    }
+   ],
+   "isGpuEnabled": false,
+   "isInternetEnabled": true,
+   "language": "python",
+   "sourceType": "notebook"
+  },
+  "kernelspec": {
+   "display_name": "Python 3",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.10.12"
+  },
+  "papermill": {
+   "default_parameters": {},
+   "duration": 2.38596,
+   "end_time": "2024-12-27T21:01:55.148891",
+   "environment_variables": {},
+   "exception": null,
+   "input_path": "__notebook__.ipynb",
+   "output_path": "__notebook__.ipynb",
+   "parameters": {},
+   "start_time": "2024-12-27T21:01:52.762931",
+   "version": "2.6.0"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}
